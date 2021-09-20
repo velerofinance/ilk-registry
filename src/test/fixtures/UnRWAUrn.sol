@@ -17,8 +17,8 @@ pragma solidity >=0.5.12;
 
 import {Vat}              from 'dss/vat.sol';
 import {Jug}              from 'dss/jug.sol';
-import {Dai}              from 'dss/dai.sol';
-import {DaiJoin, GemJoin} from 'dss/join.sol';
+import {Token}              from 'dss/usdv.sol';
+import {USDVJoin, GemJoin} from 'dss/join.sol';
 
 contract UnRWAUrn {
     // --- auth ---
@@ -52,7 +52,7 @@ contract UnRWAUrn {
     Vat  public vat;
     Jug  public jug;
     GemJoin public gemJoin;
-    DaiJoin public daiJoin;
+    USDVJoin public usdvJoin;
     address public outputConduit;
 
     // Events
@@ -84,18 +84,18 @@ contract UnRWAUrn {
 
     // --- init ---
     constructor(
-        address vat_, address jug_, address gemJoin_, address daiJoin_, address outputConduit_
+        address vat_, address jug_, address gemJoin_, address usdvJoin_, address outputConduit_
     ) public {
         // requires in urn that outputConduit isn't address(0)
         vat = Vat(vat_);
         jug = Jug(jug_);
         gemJoin = GemJoin(gemJoin_);
-        daiJoin = DaiJoin(daiJoin_);
+        usdvJoin = USDVJoin(usdvJoin_);
         outputConduit = outputConduit_;
         wards[msg.sender] = 1;
-        Dai(address(gemJoin.gem())).approve(address(gemJoin), uint256(-1));
-        Dai(address(daiJoin.dai())).approve(address(daiJoin), uint256(-1));
-        Vat(vat_).hope(address(daiJoin));
+        Token(address(gemJoin.gem())).approve(address(gemJoin), uint256(-1));
+        Token(address(usdvJoin.usdv())).approve(address(usdvJoin), uint256(-1));
+        Vat(vat_).hope(address(usdvJoin));
         emit Rely(msg.sender);
         emit File("outputConduit", outputConduit_);
         emit File("jug", jug_);
@@ -113,7 +113,7 @@ contract UnRWAUrn {
     // n.b. that the operator must bring the gem
     function lock(uint256 wad) external operator {
         require(wad <= 2**255 - 1, "RwaUrn/overflow");
-        Dai(address(gemJoin.gem())).transferFrom(msg.sender, address(this), wad);
+        Token(address(gemJoin.gem())).transferFrom(msg.sender, address(this), wad);
         // join with address this
         gemJoin.join(address(this), wad);
         vat.frob(gemJoin.ilk(), address(this), address(this), address(this), int(wad), 0);
@@ -127,7 +127,7 @@ contract UnRWAUrn {
         gemJoin.exit(msg.sender, wad);
         emit Free(msg.sender, wad);
     }
-    // n.b. DAI can only go to the output conduit
+    // n.b. USDV can only go to the output conduit
     function draw(uint256 wad) external operator {
         require(outputConduit != address(0));
         bytes32 ilk = gemJoin.ilk();
@@ -136,12 +136,12 @@ contract UnRWAUrn {
         uint256 dart = divup(mul(RAY, wad), rate);
         require(dart <= 2**255 - 1, "RwaUrn/overflow");
         vat.frob(ilk, address(this), address(this), address(this), 0, int(dart));
-        daiJoin.exit(outputConduit, wad);
+        usdvJoin.exit(outputConduit, wad);
         emit Draw(msg.sender, wad);
     }
     // n.b. anyone can wipe
     function wipe(uint256 wad) external {
-        daiJoin.join(address(this), wad);
+        usdvJoin.join(address(this), wad);
         bytes32 ilk = gemJoin.ilk();
         jug.drip(ilk);
         (,uint256 rate,,,) = vat.ilks(ilk);
@@ -151,13 +151,13 @@ contract UnRWAUrn {
         emit Wipe(msg.sender, wad);
     }
 
-    // If Dai is sitting here after ES that should be sent back
+    // If USDV is sitting here after ES that should be sent back
     function quit() external {
         require(outputConduit != address(0));
         require(vat.live() == 0, "RwaUrn/vat-still-live");
-        Dai dai = Dai(address(daiJoin.dai()));
-        uint256 wad = dai.balanceOf(address(this));
-        dai.transfer(outputConduit, wad);
+        Token usdv = Token(address(usdvJoin.usdv()));
+        uint256 wad = usdv.balanceOf(address(this));
+        usdv.transfer(outputConduit, wad);
         emit Quit(msg.sender, wad);
     }
 }

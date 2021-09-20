@@ -1,12 +1,12 @@
 # Ilk Registry
 
-A publicly-modifiable registry of `ilk`'s in the Dai Stablecoin System.
+A publicly-modifiable registry of `ilk`'s in the USDV Stablecoin System.
 
 ## Public addresses
 
-Kovan: [0xc3F42deABc0C506e8Ae9356F2d4fc1505196DCDB](https://kovan.etherscan.io/address/0xc3F42deABc0C506e8Ae9356F2d4fc1505196DCDB)
+[comment]: <> (Kovan: [0xc3F42deABc0C506e8Ae9356F2d4fc1505196DCDB]&#40;https://kovan.etherscan.io/address/0xc3F42deABc0C506e8Ae9356F2d4fc1505196DCDB&#41;)
 
-Mainnet: [0x5a464C28D19848f44199D003BeF5ecc87d090F87](https://etherscan.io/address/0x5a464C28D19848f44199D003BeF5ecc87d090F87)
+[comment]: <> (Mainnet: [0x5a464C28D19848f44199D003BeF5ecc87d090F87]&#40;https://etherscan.io/address/0x5a464C28D19848f44199D003BeF5ecc87d090F87&#41;)
 
 ## Requirements
 
@@ -47,7 +47,7 @@ Useful for external contracts or web frontends which need to iterate over the on
     * `name(bytes32 ilk)`: the name of the token (if available) as `string`
     * `symbol(bytes32 ilk)`: the token symbol (if available) as `string`
 
-* `auth` functions (available to MakerDAO governance)
+* `auth` functions (available to VeleroDAO governance)
 
     * `file(bytes32 what, address)`: Update core contract values
     * `file(bytes32 ilk, bytes32 what, address)`: Update ilk data values

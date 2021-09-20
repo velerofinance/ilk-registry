@@ -10,7 +10,7 @@ import {End}     from 'dss/end.sol';
 import {Vow}     from 'dss/vow.sol';
 import {Cat}     from 'dss/cat.sol';
 import {Dog}     from 'dss/dog.sol';
-import {Dai}     from 'dss/dai.sol';
+import {Token}     from 'dss/usdv.sol';
 import {Spotter} from 'dss/spot.sol';
 import {PipLike} from 'dss/spot.sol';
 import {Flipper} from 'dss/flip.sol';
@@ -19,7 +19,7 @@ import {Flapper} from 'dss/flap.sol';
 import {Flopper} from 'dss/flop.sol';
 import {GemJoin} from 'dss/join.sol';
 
-import "./test/fixtures/UnDai.sol";
+import "./test/fixtures/UnUsdv.sol";
 import "./test/fixtures/UnRWAUrn.sol";
 import "./IlkRegistry.sol";
 
@@ -164,7 +164,7 @@ contract DssIlkRegistryTest is DSTest {
     }
 
     function initStandardCollateral(bytes32 name) internal returns (Ilk memory) {
-        Dai coin = new Dai(1);
+        Token coin = new Token(1);
         coin.mint(address(this), 20 ether);
 
         vat.init(name);
@@ -191,7 +191,7 @@ contract DssIlkRegistryTest is DSTest {
     }
 
     function initMissingCollateral(bytes32 name) internal returns (Ilk memory) {
-        UnDai coin = new UnDai(1);
+        UnUsdv coin = new UnUsdv(1);
         coin.mint(address(this), 20 ether);
 
         vat.init(name);
@@ -217,13 +217,13 @@ contract DssIlkRegistryTest is DSTest {
     }
 
     function initRWACollateral(bytes32 name) internal returns (Ilk memory) {
-        Dai coin = new Dai(1);
+        Token coin = new Token(1);
         coin.mint(address(this), 20 ether);
 
         vat.init(name);
         GemJoin gjoin = new GemJoin(address(vat), name, address(coin));
         vat.rely(address(gjoin));
-        DaiJoin djoin = new DaiJoin(address(vat), address(coin));
+        USDVJoin djoin = new USDVJoin(address(vat), address(coin));
         vat.rely(address(djoin));
 
         DSValue pip = new DSValue();
@@ -235,7 +235,7 @@ contract DssIlkRegistryTest is DSTest {
             address(vat),   // vat
             address(0),     // jug
             address(gjoin), // gemJoin
-            address(djoin), // daiJoin
+            address(djoin), // usdvJoin
             _outputConduit  // outputConduit
         );
         gjoin.rely(address(_urn));
@@ -268,15 +268,15 @@ contract DssIlkRegistryTest is DSTest {
         end.file("dog",  address(dog));
         end.file("spot", address(spot));
 
-        initCollateral("ETH-A");
+        initCollateral("VLX-A");
         initCollateral("BAT-A");
         initCollateral("WBTC-A");
         initCollateral("USDC-A");
         initCollateral("USDC-B");
         initClippableCollateral("CLIP-A");
         initClippableCollateral("LINK-A");
-        initStandardCollateral("DAI-A");
-        initMissingCollateral("UNDAI-A");
+        initStandardCollateral("USDV-A");
+        initMissingCollateral("UNUSDV-A");
         initRWACollateral("RWA001");
         initRWACollateral("RWA002");
         registry = new IlkRegistry(address(vat), address(dog), address(cat), address(spot));
@@ -291,9 +291,9 @@ contract DssIlkRegistryTest is DSTest {
 
     function testAddIlk_dss() public {
         assertEq(registry.count(), 0);
-        registry.add(ilks["ETH-A"].join);
+        registry.add(ilks["VLX-A"].join);
         registry.add(ilks["BAT-A"].join);
-        registry.add(ilks["DAI-A"].join);
+        registry.add(ilks["USDV-A"].join);
         registry.add(ilks["LINK-A"].join);
         assertEq(registry.count(), 4);
     }
@@ -364,7 +364,7 @@ contract DssIlkRegistryTest is DSTest {
     }
 
     function testIlkData_dss() public {
-        registry.add(ilks["ETH-A"].join);
+        registry.add(ilks["VLX-A"].join);
         registry.add(ilks["BAT-A"].join);
 
         (uint96 pos, address join, address gem, uint8 dec, uint96 class, address pip, address xlip,
@@ -386,33 +386,33 @@ contract DssIlkRegistryTest is DSTest {
     }
 
     function testIlks_dss() public {
-        registry.add(ilks["ETH-A"].join);
+        registry.add(ilks["VLX-A"].join);
         registry.add(ilks["BAT-A"].join);
         registry.add(ilks["WBTC-A"].join);
         registry.add(ilks["USDC-A"].join);
         registry.add(ilks["USDC-B"].join);
-        registry.add(ilks["DAI-A"].join);
+        registry.add(ilks["USDV-A"].join);
         registry.add(ilks["CLIP-A"].join);
         bytes32[] memory regIlks = registry.list();
         assertEq(regIlks.length, 7);
-        assertEq(regIlks[0], ilks["ETH-A"].ilk);
+        assertEq(regIlks[0], ilks["VLX-A"].ilk);
         assertEq(regIlks[1], ilks["BAT-A"].ilk);
         assertEq(regIlks[2], ilks["WBTC-A"].ilk);
         assertEq(regIlks[3], ilks["USDC-A"].ilk);
         assertEq(regIlks[4], ilks["USDC-B"].ilk);
-        assertEq(regIlks[5], ilks["DAI-A"].ilk);
+        assertEq(regIlks[5], ilks["USDV-A"].ilk);
         assertEq(regIlks[6], ilks["CLIP-A"].ilk);
     }
 
     function testIlksPos_dss() public {
-        registry.add(ilks["ETH-A"].join);
+        registry.add(ilks["VLX-A"].join);
         registry.add(ilks["WBTC-A"].join);
         bytes32 ilk = registry.get(1);
         assertEq(ilk, ilks["WBTC-A"].ilk);
     }
 
     function testListPartial_dss() public {
-        registry.add(ilks["ETH-A"].join);
+        registry.add(ilks["VLX-A"].join);
         registry.add(ilks["BAT-A"].join);
         registry.add(ilks["WBTC-A"].join);
         registry.add(ilks["USDC-A"].join);
@@ -426,7 +426,7 @@ contract DssIlkRegistryTest is DSTest {
 
         bytes32[] memory ilkSliceB = registry.list(0, 0);
         assertEq(ilkSliceB.length, 1);
-        assertEq(ilkSliceB[0], ilks["ETH-A"].ilk);
+        assertEq(ilkSliceB[0], ilks["VLX-A"].ilk);
 
         bytes32[] memory ilkSliceC = registry.list(4, 4);
         assertEq(ilkSliceC.length, 1);
@@ -466,9 +466,9 @@ contract DssIlkRegistryTest is DSTest {
     function testDec_dss() public {
         registry.add(ilks["WBTC-A"].join);
         registry.add(ilks["USDC-A"].join);
-        registry.add(ilks["ETH-A"].join);
+        registry.add(ilks["VLX-A"].join);
         assertEq(registry.dec(ilks["USDC-A"].ilk), ilks["USDC-A"].dec);
-        assertEq(registry.dec(ilks["ETH-A"].ilk),  ilks["ETH-A"].dec);
+        assertEq(registry.dec(ilks["VLX-A"].ilk),  ilks["VLX-A"].dec);
     }
 
     function testFailRemoveLive_dss() public {
@@ -534,20 +534,20 @@ contract DssIlkRegistryTest is DSTest {
 
     function testName_dss() public {
         registry.add(ilks["WBTC-A"].join);
-        registry.add(ilks["DAI-A"].join);
-        registry.add(ilks["UNDAI-A"].join);
+        registry.add(ilks["USDV-A"].join);
+        registry.add(ilks["UNUSDV-A"].join);
         assertEq(registry.name(ilks["WBTC-A"].ilk), ilks["WBTC-A"].name);
-        assertEq(registry.name(ilks["DAI-A"].ilk), ilks["DAI-A"].name);
-        assertEq(registry.name(ilks["UNDAI-A"].ilk), ilks["UNDAI-A"].name);
+        assertEq(registry.name(ilks["USDV-A"].ilk), ilks["USDV-A"].name);
+        assertEq(registry.name(ilks["UNUSDV-A"].ilk), ilks["UNUSDV-A"].name);
     }
 
     function testSymbol_dss() public {
         registry.add(ilks["WBTC-A"].join);
-        registry.add(ilks["DAI-A"].join);
-        registry.add(ilks["UNDAI-A"].join);
+        registry.add(ilks["USDV-A"].join);
+        registry.add(ilks["UNUSDV-A"].join);
         assertEq(registry.symbol(ilks["WBTC-A"].ilk), ilks["WBTC-A"].symbol);
-        assertEq(registry.symbol(ilks["DAI-A"].ilk), ilks["DAI-A"].symbol);
-        assertEq(registry.symbol(ilks["UNDAI-A"].ilk), ilks["UNDAI-A"].symbol);
+        assertEq(registry.symbol(ilks["USDV-A"].ilk), ilks["USDV-A"].symbol);
+        assertEq(registry.symbol(ilks["UNUSDV-A"].ilk), ilks["UNUSDV-A"].symbol);
     }
 
     function testInfo_dss() public {
@@ -627,21 +627,21 @@ contract DssIlkRegistryTest is DSTest {
     }
 
     function testFileSpot_dss() public {
-        registry.add(ilks["DAI-A"].join);
-        assertEq(registry.pip(ilks["DAI-A"].ilk), ilks["DAI-A"].pip);
+        registry.add(ilks["USDV-A"].join);
+        assertEq(registry.pip(ilks["USDV-A"].ilk), ilks["USDV-A"].pip);
 
         spot  = new Spotter(address(vat));
         vat.rely(address(spot));
         end.file("spot",  address(spot));
         DSValue pip = new DSValue();
-        spot.file("DAI-A", "pip", address(pip));
+        spot.file("USDV-A", "pip", address(pip));
 
         registry.file(bytes32("spot"), address(spot));
         assertEq(address(spot), address(registry.spot()));
 
-        assertEq(ilks["DAI-A"].pip, address(registry.pip("DAI-A")));
-        registry.update("DAI-A");
-        assertEq(address(pip), address(registry.pip("DAI-A")));
+        assertEq(ilks["USDV-A"].pip, address(registry.pip("USDV-A")));
+        registry.update("USDV-A");
+        assertEq(address(pip), address(registry.pip("USDV-A")));
     }
 
     function testFileAddress_dss() public {
